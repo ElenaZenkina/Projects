@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.ComponentModel;
 
 namespace Example
 {
@@ -615,6 +616,133 @@ namespace Example
                 // Перекладываем стопку из n-1 элементов уже на стержень-приёмник.
                 // А стержень-источник играет пока роль вспомогательного.
                 Hanoy(n - 1, v, p, i);
+            }
+        }
+
+        #endregion
+
+        #region Задача поиска кратчайшего пути
+
+        public class Cell
+        {
+            public (int, int) Value { get; private set; }
+            public Cell Parent { get; /*private*/ set; }
+            public Cell NextUp { get; /*private*/ set; }
+            public Cell NextRight { get; /*private*/ set; }
+            public Cell NextDown { get; /*private*/ set; }
+            public Cell NextLeft { get; /*private*/ set; }
+
+
+            public Cell((int, int) value)
+            {
+                Value = value;
+            }
+        }
+
+        public class FSP
+        {
+            private HashSet<(int, int)> visited; // !!! don't use right now
+            private readonly int[][] board;
+
+            public FSP(int[][] board)
+            {
+                this.board = board;
+            }
+
+            public List<(int, int)> Finding((int, int) start, (int, int) end)
+            {
+                List<(int, int)> path = new();
+                Cell root = new Cell(start);
+                SetNeighbors(root, null);
+                visited = new HashSet<(int, int)>();
+
+                Queue<Cell> queue = new();
+                queue.Enqueue(root);
+
+                Cell cell = root;
+                while (queue.Count > 0)
+                {
+                    cell = queue.Dequeue();
+                    if (cell.Value.Item1 == end.Item1 && cell.Value.Item2 == end.Item2) break; // path must to exist
+
+                    if (cell.NextUp != null) AddToQueue(cell.NextUp);
+                    if (cell.NextRight != null) AddToQueue(cell.NextRight);
+                    if (cell.NextDown != null) AddToQueue(cell.NextDown);
+                    if (cell.NextLeft != null) AddToQueue(cell.NextLeft);
+
+                    void AddToQueue(Cell child)
+                    {
+                        SetNeighbors(child, cell);
+                        queue.Enqueue(child);
+                    }
+                }
+
+                while (cell.Parent != null)
+                {
+                    path.Add(cell.Value);
+                    cell = cell.Parent;
+                }
+
+                return path;
+            }
+
+            private void SetNeighbors(Cell cell, Cell parent)
+            {
+                cell.Parent = parent;
+                (int, int) neighbor = cell.Value;
+
+                if (IsNeighborUp((cell.Value), out neighbor))
+                {
+                    cell.NextUp = new Cell(neighbor);
+                }
+                if (IsNeighborRight((cell.Value), out neighbor))
+                {
+                    cell.NextRight = new Cell(neighbor);
+                }
+                if (IsNeighborDown((cell.Value), out neighbor))
+                {
+                    cell.NextDown = new Cell(neighbor);
+                }
+                if (IsNeighborLeft((cell.Value), out neighbor))
+                {
+                    cell.NextLeft = new Cell(neighbor);
+                }
+            }
+
+            private bool IsNeighborUp((int, int) value, out (int, int) neighbor)
+            {
+                int x = value.Item1 - 1;
+                int y = value.Item2;
+                neighbor = (x, y);
+                if (x >= 0 && board[x][y] != 1) return true;
+                return false;
+            }
+
+            private bool IsNeighborRight((int, int) value, out (int, int) neighbor)
+            {
+                int x = value.Item1;
+                int y = value.Item2 + 1;
+                neighbor = (x, y);
+                if (y < board[0].Length && board[x][y] != 1) return true;
+                return false;
+            }
+
+            private bool IsNeighborDown((int, int) value, out (int, int) neighbor)
+            {
+                int x = value.Item1 + 1;
+                int y = value.Item2;
+                neighbor = (x, y);
+                if (x < board.Length && board[x][y] != 1) return true;
+                return false;
+            }
+
+            private bool IsNeighborLeft((int, int) value, out (int, int) neighbor)
+            {
+                int x = value.Item1;
+                int y = value.Item2 - 1;
+                neighbor = (x, y);
+                if (y >= 0 && board[x][y] != 1) return true;
+                return false;
             }
         }
 
